@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connect 4 Online</title>
+    <style>
+        :root {
+            --primary: #7c3aed;
+            --primary-light: #8b5cf6;
+            --primary-dark: #6d28d9;
+            --background: #f3f4f6;
+            --secondary: #e0e7ff;
+            --board: #3730a3;
+            --cell: #c7d2fe;
+            --player1: #ef4444;
+            --player2: #fbbf24;
+            --dark-text: #1f2937;
+            --light-text: #f9fafb;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--background);
+            color: var(--dark-text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background-color: var(--primary);
+            color: var(--light-text);
+            padding: 1rem;
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 1rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background-color: white;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            margin-bottom: 0.5rem;
+        }
+
+        h2 {
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding: 0.5rem;
+            background-color: var(--secondary);
+            border-radius: 0.5rem;
+        }
+
+        .player-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .player1 {
+            background-color: var(--player1);
+        }
+
+        .player2 {
+            background-color: var(--player2);
+        }
+
+        .game-board {
+            background-color: var(--board);
+            border-radius: 10px;
+            padding: 15px;
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+        }
+
+        .column {
+            cursor: pointer;
+            display: flex;
+            flex-direction: column-reverse;
+            gap: 10px;
+        }
+
+        .cell {
+            width: 100%;
+            aspect-ratio: 1/1;
+            background-color: var(--cell);
+            border-radius: 50%;
+            transition: background-color 0.3s ease;
+        }
+
+        .cell.player1 {
+            background-color: var(--player1);
+        }
+
+        .cell.player2 {
+            background-color: var(--player2);
+        }
+
+        .column:hover .cell:not(.player1):not(.player2):last-of-type {
+            background-color: rgba(124, 58, 237, 0.3);
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.2s ease;
+            margin-top: 1rem;
+            width: 100%;
+        }
+
+        button:hover {
+            background-color: var(--primary-dark);
+        }
+
+        button:disabled {
+            background-color: #d1d5db;
+            cursor: not-allowed;
+        }
+
+        button.secondary {
+            background-color: transparent;
+            color: var(--primary);
+            border: 1px solid var(--primary);
+        }
+
+        button.secondary:hover {
+            background-color: var(--secondary);
+        }
+
+        input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .invite-section,
+        .join-section,
+        .waiting-screen,
+        .game-section {
+            display: none;
+        }
+
+        .welcome-section,
+        .invite-section,
+        .join-section,
+        .waiting-screen,
+        .game-section {
+            width: 100%;
+        }
+
+        .display-block {
+            display: block;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+
+        footer {
+            text-align: center;
+            padding: 1rem;
+            background-color: var(--primary);
+            color: var(--light-text);
+            margin-top: auto;
+        }
+
+        .copy-btn {
+            position: relative;
+            padding-left: 2.5rem;
+        }
+
+        .copy-btn::before {
+            content: "📋";
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .actions button {
+            flex: 1;
+        }
+
+        .player-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .player-tag {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            background-color: var(--secondary);
+        }
+
+        @media (max-width: 600px) {
+            .game-board {
+                padding: 8px;
+                gap: 5px;
+            }
+
+            .cell {
+                width: 100%;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Connect 4 Online</h1>
+    </header>
+
+    <main>
+        <div class="container welcome-section display-block">
+            <h2>Welcome to Connect 4 Online</h2>
+            <p>Play Connect 4 with friends by creating or joining a game.</p>
+            <div class="actions">
+                <button id="createGameBtn">Create Game</button>
+                <button id="joinGameBtn" class="secondary">Join Game</button>
+            </div>
+        </div>
+
+        <div class="container invite-section">
+            <h2>Invite a Friend</h2>
+            <p>Share this link with someone to play Connect 4:</p>
+            <input type="text" id="inviteLink" readonly>
+            <button id="copyLinkBtn" class="copy-btn">Copy Invite Link</button>
+            <p id="waitingMessage">Waiting for player to join...</p>
+        </div>
+
+        <div class="container join-section">
+            <h2>Join a Game</h2>
+            <p>Enter the game code or use the full invite link:</p>
+            <input type="text" id="gameCodeInput" placeholder="Game code or invite link">
+            <button id="joinWithCodeBtn">Join Game</button>
+            <button id="backToWelcomeBtn" class="secondary">Back</button>
+        </div>
+
+        <div class="container waiting-screen">
+            <h2>Connecting to Game</h2>
+            <p>Please wait while we connect you to the game...</p>
+            <div id="connectionStatus">Establishing connection...</div>
+        </div>
+
+        <div class="container game-section">
+            <div class="player-info">
+                <div class="player-tag">
+                    <div class="player-indicator player1"></div>
+                    <span>You</span>
+                </div>
+                <div class="player-tag">
+                    <div class="player-indicator player2"></div>
+                    <span>Opponent</span>
+                </div>
+            </div>
+
+            <div class="status">
+                <div id="statusIndicator" class="player-indicator"></div>
+                <div id="statusMessage">Waiting for game to start...</div>
+            </div>
+
+            <div class="game-board" id="gameBoard">
+                <!-- Columns will be created by JavaScript -->
+            </div>
+
+            <button id="resetGameBtn">Reset Game</button>
+            <button id="leaveGameBtn" class="secondary">Leave Game</button>
+        </div>
+    </main>
+
+    <div id="gameOverModal" class="modal">
+        <div class="modal-content">
+            <h2 id="winnerMessage">Game Over</h2>
+            <p id="winnerDetails"></p>
+            <button id="playAgainBtn">Play Again</button>
+            <button id="returnToLobbyBtn" class="secondary">Return to Lobby</button>
+        </div>
+    </div>
+
+    <footer>
+        <p>Connect 4 Online &copy; 2025</p>
+    </footer>
+
+    <script>
+        // Replace the existing <script> tag content with this updated code
+
+        // Game constants
+        const ROWS = 6;
+        const COLS = 7;
+        const EMPTY = 0;
+        const PLAYER1 = 1;
+        const PLAYER2 = 2;
+
+        // Game state
+        let gameId = null;
+        let isHost = false;
+        let currentPlayer = PLAYER1;
+        let gameBoard = Array(ROWS).fill().map(() => Array(COLS).fill(EMPTY));
+        let gameActive = false;
+        let myPlayer = PLAYER1;
+        let opponentConnected = false;
+        let socket = null;
+
+        // DOM elements
+        const welcomeSection = document.querySelector('.welcome-section');
+        const inviteSection = document.querySelector('.invite-section');
+        const joinSection = document.querySelector('.join-section');
+        const waitingScreen = document.querySelector('.waiting-screen');
+        const gameSection = document.querySelector('.game-section');
+        const gameBoardElement = document.getElementById('gameBoard');
+        const statusIndicator = document.getElementById('statusIndicator');
+        const statusMessage = document.getElementById('statusMessage');
+        const gameOverModal = document.getElementById('gameOverModal');
+        const winnerMessage = document.getElementById('winnerMessage');
+        const winnerDetails = document.getElementById('winnerDetails');
+        const inviteLinkElement = document.getElementById('inviteLink');
+        const waitingMessageElement = document.getElementById('waitingMessage');
+        const connectionStatus = document.getElementById('connectionStatus');
+
+        // Connect to WebSocket server
+        function connectWebSocket() {
+            // Use the correct WebSocket URL - change if your server is on a different port or host
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${wsProtocol}//${window.location.hostname}:3000`;
+
+            socket = new WebSocket(wsUrl);
+
+            socket.onopen = () => {
+                console.log('WebSocket connection established');
+                connectionStatus.textContent = 'Connected to server';
+            };
+
+            socket.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                console.log('Received message:', data);
+
+                handleMessage(data);
+            };
+
+            socket.onclose = () => {
+                console.log('WebSocket connection closed');
+                connectionStatus.textContent = 'Disconnected from server. Trying to reconnect...';
+                // Try to reconnect after a delay
+                setTimeout(connectWebSocket, 3000);
+            };
+
+            socket.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                connectionStatus.textContent = 'Connection error. Please try again.';
+            };
+        }
+
+        // Handle incoming WebSocket messages
+        function handleMessage(data) {
+            switch (data.type) {
+                case 'gameCreated':
+                    gameId = data.gameId;
+                    const inviteLink = `${window.location.href.split('?')[0]}?game=${gameId}`;
+                    inviteLinkElement.value = inviteLink;
+                    break;
+
+                case 'start':
+                    opponentConnected = true;
+                    startGame();
+                    if (isHost) {
+                        waitingMessageElement.textContent = 'Player joined! Starting game...';
+                    }
+                    break;
+
+                case 'move':
+                    if (data.player !== myPlayer) {
+                        // Update the game state after opponent's move
+                        gameBoard[data.row][data.col] = data.player;
+
+                        // Check for win or draw
+                        if (checkWin(data.row, data.col, data.player)) {
+                            gameActive = false;
+                            showGameOverModal(data.player);
+                        } else if (checkDraw()) {
+                            gameActive = false;
+                            showGameOverModal(0);
+                        } else {
+                            // Switch players
+                            currentPlayer = currentPlayer === PLAYER1 ? PLAYER2 : PLAYER1;
+                        }
+
+                        updateBoard();
+                    }
+                    break;
+
+                case 'error':
+                    alert(`Error: ${data.message}`);
+                    showSection(welcomeSection);
+                    break;
+
+                case 'reset':
+                    resetGame();
+                    break;
+            }
+        }
+
+        // Initialize the game board UI
+        function initializeBoard() {
+            gameBoardElement.innerHTML = '';
+
+            for (let col = 0; col < COLS; col++) {
+                const column = document.createElement('div');
+                column.className = 'column';
+                column.dataset.col = col;
+
+                for (let row = 0; row < ROWS; row++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    column.appendChild(cell);
+                }
+
+                column.addEventListener('click', () => makeMove(col));
+                gameBoardElement.appendChild(column);
+            }
+
+            updateBoard();
+        }
+
+        // Update the game board UI based on the game state
+        function updateBoard() {
+            for (let row = 0; row < ROWS; row++) {
+                for (let col = 0; col < COLS; col++) {
+                    const cell = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+                    cell.className = 'cell';
+
+                    if (gameBoard[row][col] === PLAYER1) {
+                        cell.classList.add('player1');
+                    } else if (gameBoard[row][col] === PLAYER2) {
+                        cell.classList.add('player2');
+                    }
+                }
+            }
+
+            // Update game status
+            updateGameStatus();
+        }
+
+        // Update the game status message and indicator
+        function updateGameStatus() {
+            statusIndicator.className = 'player-indicator';
+
+            if (currentPlayer === PLAYER1) {
+                statusIndicator.classList.add('player1');
+            } else {
+                statusIndicator.classList.add('player2');
+            }
+
+            if (!opponentConnected) {
+                statusMessage.textContent = 'Waiting for opponent to join...';
+            } else if (gameActive) {
+                if (currentPlayer === myPlayer) {
+                    statusMessage.textContent = 'Your turn';
+                } else {
+                    statusMessage.textContent = 'Opponent\'s turn';
+                }
+            } else {
+                statusMessage.textContent = 'Game ended';
+            }
+        }
+
+        // Make a move in the specified column
+        function makeMove(col) {
+            if (!gameActive || currentPlayer !== myPlayer) return;
+
+            // Find the lowest empty cell in the column
+            let row = -1;
+            for (let r = 0; r < ROWS; r++) {
+                if (gameBoard[r][col] === EMPTY) {
+                    row = r;
+                    break;
+                }
+            }
+
+            if (row === -1) return; // Column is full
+
+            // Update the game state
+            gameBoard[row][col] = currentPlayer;
+
+            // Send the move to the server
+            sendGameUpdate({
+                type: 'move',
+                row: row,
+                col: col,
+                player: currentPlayer,
+                gameId: gameId
+            });
+
+            // Check for win or draw
+            if (checkWin(row, col, currentPlayer)) {
+                gameActive = false;
+                showGameOverModal(currentPlayer);
+            } else if (checkDraw()) {
+                gameActive = false;
+                showGameOverModal(0);
+            } else {
+                // Switch players
+                currentPlayer = currentPlayer === PLAYER1 ? PLAYER2 : PLAYER1;
+            }
+
+            updateBoard();
+        }
+
+        // Check if the current move results in a win
+        function checkWin(row, col, player) {
+            // Check horizontal
+            let count = 0;
+            for (let c = 0; c < COLS; c++) {
+                count = (gameBoard[row][c] === player) ? count + 1 : 0;
+                if (count >= 4) return true;
+            }
+
+            // Check vertical
+            count = 0;
+            for (let r = 0; r < ROWS; r++) {
+                count = (gameBoard[r][col] === player) ? count + 1 : 0;
+                if (count >= 4) return true;
+            }
+
+            // Check diagonal (/)
+            for (let r = 0; r < ROWS - 3; r++) {
+                for (let c = 0; c < COLS - 3; c++) {
+                    if (gameBoard[r][c] === player &&
+                        gameBoard[r + 1][c + 1] === player &&
+                        gameBoard[r + 2][c + 2] === player &&
+                        gameBoard[r + 3][c + 3] === player) {
+                        return true;
+                    }
+                }
+            }
+
+            // Check diagonal (\)
+            for (let r = 0; r < ROWS - 3; r++) {
+                for (let c = 3; c < COLS; c++) {
+                    if (gameBoard[r][c] === player &&
+                        gameBoard[r + 1][c - 1] === player &&
+                        gameBoard[r + 2][c - 2] === player &&
+                        gameBoard[r + 3][c - 3] === player) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        // Check if the game is a draw
+        function checkDraw() {
+            for (let col = 0; col < COLS; col++) {
+                if (gameBoard[0][col] === EMPTY) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // Show the game over modal with the winner or draw message
+        function showGameOverModal(winner) {
+            if (winner === PLAYER1) {
+                winnerMessage.textContent = winner === myPlayer ? 'You Win!' : 'You Lose!';
+                winnerDetails.textContent = winner === myPlayer ? 'Congratulations on your victory!' : 'Better luck next time!';
+            } else if (winner === PLAYER2) {
+                winnerMessage.textContent = winner === myPlayer ? 'You Win!' : 'You Lose!';
+                winnerDetails.textContent = winner === myPlayer ? 'Congratulations on your victory!' : 'Better luck next time!';
+            } else {
+                winnerMessage.textContent = 'Draw!';
+                winnerDetails.textContent = 'The game ended in a draw.';
+            }
+
+            gameOverModal.style.display = 'flex';
+        }
+
+        // Reset the game
+        function resetGame() {
+            gameBoard = Array(ROWS).fill().map(() => Array(COLS).fill(EMPTY));
+            currentPlayer = PLAYER1;
+            gameActive = true;
+
+            updateBoard();
+            gameOverModal.style.display = 'none';
+
+            // Send reset game message to other player
+            if (isHost) {
+                sendGameUpdate({
+                    type: 'reset'
+                });
+            }
+        }
+
+        // Create a new game
+        function createGame() {
+            if (!socket || socket.readyState !== WebSocket.OPEN) {
+                alert('Not connected to server. Please refresh and try again.');
+                return;
+            }
+
+            isHost = true;
+            myPlayer = PLAYER1;
+
+            showSection(inviteSection);
+            waitingMessageElement.textContent = 'Creating game...';
+
+            // Send create game request to server
+            socket.send(JSON.stringify({
+                type: 'create'
+            }));
+        }
+
+        // Join an existing game
+        function joinGame(code) {
+            if (!socket || socket.readyState !== WebSocket.OPEN) {
+                alert('Not connected to server. Please refresh and try again.');
+                return;
+            }
+
+            isHost = false;
+            myPlayer = PLAYER2;
+
+            // Extract game ID from full link or use code directly
+            if (code.includes('?game=')) {
+                gameId = code.split('?game=')[1];
+            } else {
+                gameId = code;
+            }
+
+            showSection(waitingScreen);
+            connectionStatus.textContent = 'Joining game...';
+
+            // Send join game request to server
+            socket.send(JSON.stringify({
+                type: 'join',
+                gameId: gameId
+            }));
+        }
+
+        // Start the game
+        function startGame() {
+            gameActive = true;
+            opponentConnected = true;
+
+            initializeBoard();
+            showSection(gameSection);
+            updateGameStatus();
+        }
+
+        // Show a specific section and hide others
+        function showSection(section) {
+            welcomeSection.classList.remove('display-block');
+            inviteSection.classList.remove('display-block');
+            joinSection.classList.remove('display-block');
+            waitingScreen.classList.remove('display-block');
+            gameSection.classList.remove('display-block');
+
+            section.classList.add('display-block');
+        }
+
+        // Send game updates to the server
+        function sendGameUpdate(data) {
+            if (!gameId) {
+                console.error('No game ID available');
+                return;
+            }
+
+            data.gameId = gameId;
+
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify(data));
+            } else {
+                console.error('Socket not connected');
+            }
+        }
+
+        // Set up event listeners
+        document.getElementById('createGameBtn').addEventListener('click', createGame);
+        document.getElementById('joinGameBtn').addEventListener('click', () => showSection(joinSection));
+        document.getElementById('joinWithCodeBtn').addEventListener('click', () => {
+            const code = document.getElementById('gameCodeInput').value.trim();
+            if (code) {
+                joinGame(code);
+            }
+        });
+        document.getElementById('backToWelcomeBtn').addEventListener('click', () => showSection(welcomeSection));
+        document.getElementById('copyLinkBtn').addEventListener('click', () => {
+            inviteLinkElement.select();
+            document.execCommand('copy');
+            document.getElementById('copyLinkBtn').textContent = 'Copied!';
+            setTimeout(() => {
+                document.getElementById('copyLinkBtn').textContent = 'Copy Invite Link';
+            }, 2000);
+        });
+        document.getElementById('resetGameBtn').addEventListener('click', resetGame);
+        document.getElementById('leaveGameBtn').addEventListener('click', () => {
+            if (socket) {
+                socket.close();
+            }
+            showSection(welcomeSection);
+            // Reconnect to the server
+            connectWebSocket();
+        });
+        document.getElementById('playAgainBtn').addEventListener('click', resetGame);
+        document.getElementById('returnToLobbyBtn').addEventListener('click', () => {
+            gameOverModal.style.display = 'none';
+            showSection(welcomeSection);
+        });
+
+        // Connect to WebSocket server on page load
+        window.addEventListener('load', () => {
+            connectWebSocket();
+
+            // Check URL parameters for direct joining
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('game')) {
+                // Wait for connection to establish before joining
+                const checkConnectionInterval = setInterval(() => {
+                    if (socket && socket.readyState === WebSocket.OPEN) {
+                        clearInterval(checkConnectionInterval);
+                        const urlGameId = urlParams.get('game');
+                        joinGame(urlGameId);
+                    }
+                }, 500);
+            }
+        });
+    </script>
+</body>
+
+</html>
