@@ -378,6 +378,9 @@
         let opponentConnected = false;
         let socket = null;
 
+        // Remote server URL
+        const SERVER_URL = "https://multiplayergame-connect4.onrender.com";
+
         // DOM elements
         const welcomeSection = document.querySelector('.welcome-section');
         const inviteSection = document.querySelector('.invite-section');
@@ -396,9 +399,9 @@
 
         // Connect to WebSocket server
         function connectWebSocket() {
-            // Use the correct WebSocket URL - change if your server is on a different port or host
+            // Connect to the WebSocket server
             const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsUrl = `${wsProtocol}//${window.location.hostname}:3000`;
+            const wsUrl = SERVER_URL.replace('http:', wsProtocol).replace('https:', wsProtocol);
 
             socket = new WebSocket(wsUrl);
 
